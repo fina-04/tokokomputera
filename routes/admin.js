@@ -12,8 +12,15 @@ const md5 = require('md5');
 const models = require('../models/index');
 const admin = models.admin
 
+//import auth
+const auth = require("../auth")
+const jwt = require("jsonwebtoken")
+const SECRET_KEY = "BelajarNodeJSItuMenyengankan"
+
+
+
 //endpoint menampilkan semua data admin,method: GET, function: FINDALL()
-app.get("/",(req,res) => {
+app.get("/", auth,(req,res) => {
     admin .findAll()
     .then(admin => {
         res.json(admin)
@@ -26,7 +33,7 @@ app.get("/",(req,res) => {
 })
 
 //endpoint untuk menyimpan data admin,METHOD: POST, function: create
-app.post("/", (req,res) => {
+app.post("/", auth, (req,res) => {
     let data = {
         name : req.body.name,
         username : req.body.username,
@@ -45,7 +52,7 @@ app.post("/", (req,res) => {
 })
 
 //endpoint mengupdate data admin, METHOD: PUT, function:update
-app.put("/:id",(req,res) => {
+app.put("/:id", auth, (req,res) => {
     let param = {
         admin_id : req.params.id
     }
@@ -70,7 +77,7 @@ app.put("/:id",(req,res) => {
 
 
 //endpoint menghapus data admin, METHOD: DELETE, function: destroy
-app.delete("/:id",(req,res) => {
+app.delete("/:id", auth,(req,res) => {
     let param = {
         admin_id : req.params.id
     }
@@ -86,5 +93,33 @@ app.delete("/:id",(req,res) => {
         })
     })
 })
+
+//endpoint login admin,METHOD: POST, function: findOne
+app.post("/auth", async (req,res) => {
+    let data = {
+        username: req.body.username,
+        password: md5(req.body.password)
+    }
+ 
+    let result = await admin.findOne({where: data})
+    if(result){
+        //set payload from data
+        let payload = JSON.stringify(result)
+        // generate token based on payload and secret_keynpm
+        let token = jwt.sign(payload, SECRET_KEY)
+        res.json({
+            logged: true,
+            data: result,
+            token: token
+        })
+    }else{
+        res.json({
+            logged: false,
+            message: "Invalid username or password"
+        })
+    }
+})
+
+
 
 module.exports = app
